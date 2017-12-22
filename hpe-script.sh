@@ -11,8 +11,8 @@ sudo iscsiadm -m node -o new -T $iqn1 -p $blockIp1:3260
 sudo iscsiadm -m node -o update -T $iqn1 -n node.startup -v automatic
 sudo iscsiadm -m node -T $iqn1 -p $blockIp1:3260 -l
 
-sudo -i
-useradd dbadmin
+#sudo -i
+#useradd dbadmin
 
 ##Install needed Packages
 yum -y install dialog
