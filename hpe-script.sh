@@ -1,7 +1,8 @@
 #!/bin/bash
 
 sudo useradd dbadmin
-sleep 10
+sleep 5
+
 ##Install needed Packages
 yum -y install dialog
 #yum -y install pstack
