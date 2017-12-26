@@ -4,7 +4,7 @@ sudo useradd dbadmin
 
 ##Install needed Packages
 yum -y install dialog
-yum -y install pstack
+#yum -y install pstack
 yum -y install mcelog
 yum -y install sysstat
 
