@@ -1,7 +1,7 @@
 #!/bin/bash
 
 sudo useradd dbadmin
-
+sleep 10
 ##Install needed Packages
 yum -y install dialog
 #yum -y install pstack
@@ -43,6 +43,8 @@ echo "UUID=${DevCon} /data ext4 defaults,nofail,nobarrier 0 2" >> /etc/fstab
 
 mount -all
 
+sleep 5
+
 ##Create Swapfile
 install -o root -g root -m 0600 /dev/null /swapfile
 dd if=/dev/zero of=/swapfile bs=1k count=2048k
@@ -72,6 +74,8 @@ chown dbadmin:verticadba /home/dbadmin
 chmod 755 /home/dbadmin
 chown dbadmin:verticadba /data
 echo 'export TZ="America/New_York"' >> /etc/profile
+
+sleep 5
 
 ##Install Vertica
 /opt/vertica/sbin/install_vertica --accept-eula --license CE --point-to-point --dba-user dbadmin --dba-user-password-disabled --hosts localhost --failure-threshold NONE
@@ -149,12 +153,15 @@ echo Clean_up_files >> /home/dbadmin/stepfile
 chkconfig --level 12345 verticad  on
 sed -i 's/ChallengeResponseAuthentication .*no$/ChallengeResponseAuthentication yes/' /etc/ssh/sshd_config
 
+sleep 5
+
 #Firewall add to the vm
 sudo firewall-cmd --zone=public --add-port=443/tcp --permanent
 sudo firewall-cmd --zone=public --add-port=80/tcp --permanent
 sudo firewall-cmd --zone=public --add-port=8080/tcp --permanent
 sudo firewall-cmd --reload
 
+sleep 5
 service sshd restart
 systemctl stop firewalld
 systemctl disable firewalld
