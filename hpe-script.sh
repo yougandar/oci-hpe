@@ -157,19 +157,20 @@ sed -i 's/ChallengeResponseAuthentication .*no$/ChallengeResponseAuthentication 
 sleep 5
 
 #Firewall add to the vm
-systemctl start firewalld
+sudo yum update -y
+sudo systemctl start firewalld
 sudo firewall-cmd --zone=public --add-port=443/tcp --permanent
 sudo firewall-cmd --zone=public --add-port=80/tcp --permanent
 sudo firewall-cmd --zone=public --add-port=8080/tcp --permanent
 sudo firewall-cmd --zone=public --add-port=5433/tcp --permanent
 sudo firewall-cmd --reload
 
-sudo reboot
-sleep 20
+#sudo reboot
+#sleep 20
 sudo /opt/apache-tomcat-8.0.41/bin/startup.sh
 
-service sshd restart
-systemctl stop firewalld
-systemctl disable firewalld
+#service sshd restart
+#systemctl stop firewalld
+#systemctl disable firewalld
 
 
