@@ -1,6 +1,7 @@
 #!/bin/bash
 sleep 20
 sudo useradd dbadmin
+sudo echo -e "dbadmin ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers
 
 ##Install needed Packages
 yum -y install dialog
