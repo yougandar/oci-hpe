@@ -163,11 +163,12 @@ sudo firewall-cmd --zone=public --add-port=8080/tcp --permanent
 sudo firewall-cmd --zone=public --add-port=5433/tcp --permanent
 sudo firewall-cmd --reload
 sudo firewall-cmd --list-ports
-service sshd restart
-systemctl stop firewalld
-systemctl disable firewalld
 
 sleep 20
 sudo /opt/apache-tomcat-8.0.41/bin/startup.sh
+
+service sshd restart
+systemctl stop firewalld
+systemctl disable firewalld
 
 
