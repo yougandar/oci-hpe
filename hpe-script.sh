@@ -1,7 +1,24 @@
 #!/bin/bash
+
+iqn=$1
+blockIp=$2
+iqn1=$3
+blockIp1=$4
+sudo iscsiadm -m node -o new -T $iqn -p $blockIp:3260
+sudo iscsiadm -m node -o update -T $iqn -n node.startup -v automatic
+sudo iscsiadm -m node -T $iqn -p $blockIp:3260 -l
+sudo iscsiadm -m node -o new -T $iqn1 -p $blockIp1:3260
+sudo iscsiadm -m node -o update -T $iqn1 -n node.startup -v automatic
+sudo iscsiadm -m node -T $iqn1 -p $blockIp1:3260 -l
+
 sleep 20
-sudo useradd dbadmin
-sudo echo -e "dbadmin ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers
+
+sudo -i
+
+sleep 20
+
+useradd dbadmin
+echo -e "dbadmin ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers
 
 ##Install needed Packages
 yum -y install dialog
@@ -165,7 +182,7 @@ sudo firewall-cmd --reload
 sudo firewall-cmd --list-ports
 
 sleep 20
-sudo /opt/apache-tomcat-8.0.41/bin/startup.sh
+#sudo /opt/apache-tomcat-8.0.41/bin/startup.sh
 
 service sshd restart
 systemctl stop firewalld
