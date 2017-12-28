@@ -1,7 +1,6 @@
 #!/bin/bash
-
+sleep 20
 sudo useradd dbadmin
-sleep 5
 
 ##Install needed Packages
 yum -y install dialog
@@ -160,6 +159,7 @@ sleep 5
 sudo firewall-cmd --zone=public --add-port=443/tcp --permanent
 sudo firewall-cmd --zone=public --add-port=80/tcp --permanent
 sudo firewall-cmd --zone=public --add-port=8080/tcp --permanent
+sudo firewall-cmd --zone=public --add-port=5433/tcp --permanent
 sudo firewall-cmd --reload
 sudo firewall-cmd --list-ports
 
