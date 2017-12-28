@@ -182,10 +182,10 @@ sudo firewall-cmd --reload
 sudo firewall-cmd --list-ports
 
 sleep 20
-#sudo /opt/apache-tomcat-8.0.41/bin/startup.sh
+sudo /opt/apache-tomcat-8.0.41/bin/startup.sh
 
 service sshd restart
 systemctl stop firewalld
 systemctl disable firewalld
 
-
+sudo reboot
