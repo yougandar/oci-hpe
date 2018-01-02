@@ -8,7 +8,7 @@ sudo echo -e "tdcsuser ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers
 
 ##Install needed Packages
 yum -y install dialog
-yum -y install pstack
+#yum -y install pstack
 yum -y install mcelog
 yum -y install sysstat
 
