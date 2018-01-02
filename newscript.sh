@@ -1,5 +1,8 @@
 #!/bin/bash
 
+sudo useradd tdpmuser
+sudo echo -e "tdpmuser ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers
+
 ##Install needed Packages
 yum -y install dialog
 yum -y install pstack
@@ -81,11 +84,11 @@ systemctl enable ntpd
 
 ##Setup User
 groupadd verticadba
-usermod -g verticadba $1
-chown $1:verticadba /home/$1
-chmod 755 /home/$1
+usermod -g verticadba tdpmuser
+chown tdpmuser:verticadba /home/tdpmuser
+chmod 755 /home/tdpmuser
 ## Modified by JVA -- chown $1:verticadba /data
-chown $1:verticadba /vertica
+chown tdpmuser:verticadba /vertica
 echo 'export TZ="America/New_York"' >> /etc/profile
 
 ## ********************Move the Predictive Maintenance Stuff before the database creation ### 
@@ -200,16 +203,16 @@ echo "Complete Step-12 -- Start the WebServices" >> /home/dbadmin/stepfile.out
 
 ## Change the TestDrive Password
 echo "Starting Step-13 -- ChangetheTestDrive Password" >> /home/dbadmin/stepfile.out
-echo "Param 1" $1 " - Param2 " $2 >> /home/dbadmin/stepfile.out
+echo "Param 1" tdpmuser " - Param2 " $2 >> /home/dbadmin/stepfile.out
 cat /tmp/tdpmfiles/Changedbadminpasswd_resticted.sh | dos2unix  >> /tmp/tdpmfiles/Chg.txt
 mv /tmp/tdpmfiles/Chg.txt  /tmp/tdpmfiles/Changedbadminpasswd_resticted.sh
 chmod +x /tmp/tdpmfiles/Changedbadminpasswd_resticted.sh 
 /tmp/tdpmfiles/Changedbadminpasswd_resticted.sh $2
-echo "Param 1" $1 " - Param2 " $2 >> /home/dbadmin/stepfile.out
+echo "Param 1" tdpmuser " - Param2 " $2 >> /home/dbadmin/stepfile.out
 echo "Complete Step-13 -- ChangetheTestDrive Password" >> /home/dbadmin/stepfile.out
 
 ##Install Vertica
-/opt/vertica/sbin/install_vertica --accept-eula --license CE --point-to-point --dba-user $1 --dba-user-password-disabled --hosts localhost --failure-threshold NONE
+/opt/vertica/sbin/install_vertica --accept-eula --license CE --point-to-point --dba-user tdpmuser --dba-user-password-disabled --hosts localhost --failure-threshold NONE
 
 ## Restricted Environment Setup
 echo "Starting Step-14 -- Restricted Environment Setup" >> /home/dbadmin/stepfile.out
@@ -217,7 +220,8 @@ cp /bin/bash /bin/rbash
 useradd -s /bin/rbash tdpmuser
 mkdir /home/tdpmuser/programs
 wget -O /tmp/tdpmfiles/bashprofile.txt https://s3.amazonaws.com/verticatestdrive/PredictiveMaint/bashprofile.txt
-wget -O /tmp/tdpmfiles/Changetdpmuserpasswd.sh https://s3.amazonaws.com/verticatestdrive/PredictiveMaint/Changetdpmuserpasswd.sh
+#wget -O /tmp/tdpmfiles/Changetdpmuserpasswd.sh https://s3.amazonaws.com/verticatestdrive/PredictiveMaint/Changetdpmuserpasswd.sh
+wget -O /tmp/tdpmfiles/Changetdpmuserpasswd.sh https://raw.githubusercontent.com/pradeepts/testRepo/master/Changedbadminpasswd.sh
 cat /tmp/tdpmfiles/bashprofile.txt | dos2unix | sudo tee /home/tdpmuser/.bash_profile
 ln -s /bin/date /home/tdpmuser/programs/
 ln -s /bin/ls /home/tdpmuser/programs/
@@ -242,12 +246,12 @@ echo "Starting Step-14 -- Restricted Environment Setup" >> /home/dbadmin/stepfil
 
 ## Restricted Environment Setup Password Change
 echo "Starting Step-15 -- ChangetheTestDrive tdpmuser Password" >> /home/dbadmin/stepfile.out
-echo "Param 1" $1 " - Param2 " $2 >> /home/dbadmin/stepfile.out
+echo "Param 1" tdpmuser " - Param2 " $2 >> /home/dbadmin/stepfile.out
 cat /tmp/tdpmfiles/Changetdpmuserpasswd.sh | dos2unix  >> /tmp/tdpmfiles/Chgtdpm.txt
 mv /tmp/tdpmfiles/Chgtdpm.txt  /tmp/tdpmfiles/Changetdpmuserpasswd.sh
 chmod +x /tmp/tdpmfiles/Changetdpmuserpasswd.sh 
 /tmp/tdpmfiles/Changetdpmuserpasswd.sh $2
-echo "Param 1" $1 " - Param2 " $2 >> /home/dbadmin/stepfile.out
+echo "Param 1" tdpmuser " - Param2 " $2 >> /home/dbadmin/stepfile.out
 echo "Complete Step-15 -- ChangetheTestDrive tdpmuser Password" >> /home/dbadmin/stepfile.out		  
 
 ## Final Cleanup
@@ -265,7 +269,7 @@ useradd uidbadmin -g 1002 -d /home/dbadmin
 
 ##Create DB
 ## Modified by JVA -- sudo -n -H -u $1 /opt/vertica/bin/admintools  -t create_db -s localhost -d testdrive -c /data/controlfiles -D /data/datafiles
-sudo -n -H -u $1 /opt/vertica/bin/admintools  -t create_db -s localhost -d testdrive -c /vertica/data/controlfiles -D /vertica/data/datafiles
+sudo -n -H -u tdpmuser /opt/vertica/bin/admintools  -t create_db -s localhost -d testdrive -c /vertica/data/controlfiles -D /vertica/data/datafiles
 
 ##Install MC
 echo StartMC_Install_PredictiveMaint-`date` >> /home/dbadmin/stepfile.out
@@ -284,5 +288,7 @@ echo 'sudo -n -H -u dbadmin /opt/vertica/bin/admintools --tool start_db --databa
 echo 'sudo /bin/systemctl start httpd.service' >> /etc/rc.local
 
 shutdown -r +1 &
+
+
 
 
