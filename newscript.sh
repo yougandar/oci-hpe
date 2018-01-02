@@ -1,30 +1,27 @@
 #!/bin/bash
 
 sudo useradd dbadmin
-sudo useradd tdpmuser
+sudo useradd tdcsuser
 sudo echo -e "dbadmin ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers
 sudo echo -e "tdpmuser ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers
+
 
 ##Install needed Packages
 yum -y install dialog
 yum -y install pstack
 yum -y install mcelog
 yum -y install sysstat
-yum -y install java
 
 ##Create Data and Catalog Directories
-## Modified by JVA -- mkdir /data
-mkdir /vertica
-
+mkdir /data
 
 ##Get Vertica RPM
-mkdir /tmp/software
-wget -O /tmp/software/vertica-8.1.0-2.x86_64.RHEL6.rpm https://s3.amazonaws.com/verticatestdrive/PredictiveMaint/vertica-8.1.0-2.x86_64.RHEL6.rpm
-wget -O /tmp/software/vertica-console-8.1.0-0.x86_64.RHEL6.rpm https://s3.amazonaws.com/verticatestdrive/PredictiveMaint/vertica-console-8.1.0-0.x86_64.RHEL6.rpm
+wget https://s3.amazonaws.com/verticatestdrive/vertica-8.0.0-3.x86_64.RHEL6.rpm
+
+mv vertica-8.0.0-3.x86_64.RHEL6.rpm /root/vertica-8.0.0-3.x86_64.RHEL6.rpm
 
 ##Install Vertica RPM
-rpm -Uvh /tmp/software/vertica-8.1.0-2.x86_64.RHEL6.rpm
-rpm -Uvh /tmp/software/vertica-console-8.1.0-0.x86_64.RHEL6.rpm
+rpm -Uvh /root/vertica-8.0.0-3.x86_64.RHEL6.rpm
 
 ##Determine disks
 raid=""
@@ -43,8 +40,7 @@ if [ $raid = "/dev/sda" ] ; then DevCon=`blkid /dev/sdc|sed 's_/dev/sda: UUID="_
 if [ $raid = "/dev/sdb" ] ; then DevCon=`blkid /dev/sdb|sed 's_/dev/sdb: UUID="__' | sed 's_" TYPE="ext4"__'` ; fi
 if [ $raid = "/dev/sdc" ] ; then DevCon=`blkid /dev/sdc|sed 's_/dev/sdc: UUID="__' | sed 's_" TYPE="ext4"__'` ; fi
 
-## Modified by JVA -- echo "UUID=${DevCon} /data ext4 defaults,nofail,nobarrier 0 2" >> /etc/fstab
-echo "UUID=${DevCon} /vertica ext4 defaults,nofail,nobarrier 0 2" >> /etc/fstab
+echo "UUID=${DevCon} /data ext4 defaults,nofail,nobarrier 0 2" >> /etc/fstab
 
 mount -all
 
@@ -65,230 +61,160 @@ echo '/sbin/blockdev --setra 2048 /dev/sdc' >> /etc/rc.local
 echo 'if test -f /sys/kernel/mm/transparent_hugepage/enabled; then' >> /etc/rc.local
 echo '   echo never > /sys/kernel/mm/transparent_hugepage/enabled' >> /etc/rc.local
 echo 'fi' >> /etc/rc.local
-echo always > /sys/kernel/mm/transparent_hugepage/enabled
+echo never > /sys/kernel/mm/transparent_hugepage/enabled
 
 
 echo deadline > /sys/block/sda/queue/scheduler
 echo deadline > /sys/block/sdc/queue/scheduler
-
-## Enable rc.local execution at boot
-chmod +x /etc/rc.d/rc.local
-
-sed -i '/SELINUX=enforcing/c\SELINUX=disable' /etc/selinux/config
-setenforce 0
-
-chkconfig iptables off
-
-systemctl stop iptables
-systemctl disable iptables
-systemctl start ntpd
-systemctl enable ntpd
 
 ##Setup User
 groupadd verticadba
 usermod -g verticadba $1
 chown $1:verticadba /home/$1
 chmod 755 /home/$1
-## Modified by JVA -- chown $1:verticadba /data
-chown $1:verticadba /vertica
+chown $1:verticadba /data
 echo 'export TZ="America/New_York"' >> /etc/profile
-
-## ********************Move the Predictive Maintenance Stuff before the database creation ### 
-## Install the necessary Packages
-echo "Starting Step-01 -- YumInstall" >> /home/dbadmin/stepfile.out
-yum install -y mdadm
-yum install -y gdb
-yum install -y mcelog
-yum install -y sysstat
-yum install -y python-pip
-## yum install -y tz
-yum update -y tzdata
-yum install -y httpd
-yum install -y unixODBC
-pip install  --upgrade pip
-yum install -y php-odbc
-yum install -y dialog
-yum install -y php-gd php-pear php-mysql
-yum group install -y 'Development Tools'
-yum install -y libxml2-devel
-yum install -y  php-xml
-yum install -y java
-yum install -y php
-yum install -y php-odbc
-yum install -y dos2unix 
-echo "Complete Step-01 -- YumInstall" >> /home/dbadmin/stepfile.out
-
-## Update the Profile file with this information
-echo "Starting Step-02 -- UpdateProfile" >> /home/dbadmin/stepfile.out
-sudo echo "export TZ=America/New_York" >> /etc/profile
-source /etc/profile
-echo "Complete Step-02 -- UpdateProfile" >> /home/dbadmin/stepfile.out
-
-## Create folders for storing Vertica files
-echo "Starting Step-03 -- Create folder" >> /home/dbadmin/stepfile.out
-## Commented by JVA -- mkdir /vertica
-mkdir /vertica/data
-mkdir /vertica/data/controlfiles
-mkdir /vertica/data/datafiles
-mkdir /vertica/data/iotdata
-## - Added this steps for Azure
-## Commented by JVA -- mkdir /data/iotdata
-## Commented by JVA -- ln -s /data/iotdata /vertica/data/iotdata 
-## - Added this steps for Azure
-## "Not Required for Azure" mkdir /vertica/data/datafiles
-## "Not Required for Azure" mkdir /vertica/data/controlfiles
-mkdir /tmp/tdpmfiles
-echo "Complete Step-03 -- Create folder" >> /home/dbadmin/stepfile.out
-
-## Change Permission on the Vertica folder
-echo "Starting Step-04 -- Change owner of the folder" >> /home/dbadmin/stepfile.out
-chown -R dbadmin /vertica
-chgrp -R verticadba /vertica
-## Commneted by JVA -- chown -R dbadmin /vertica
-## Commneted by JVA -- chgrp -R verticadba /vertica
-## Commneted by JVA -- chown -R dbadmin /data/iotdata
-## Commneted by JVA -- chgrp -R verticadba /data/iotdata
-echo "Complete Step-04 -- Change owner of the folder" >> /home/dbadmin/stepfile.out
-
-## Get the files
-echo "Starting Step-05 -- Download files" >> /home/dbadmin/stepfile.out
-wget -O /tmp/tdpmfiles/predictivemaint_addfiles.tar.gz https://s3.amazonaws.com/verticatestdrive/PredictiveMaint/predictivemaint_addfiles.tar.gz
-wget -O /tmp/tdpmfiles/predictivemaint_application.tar.gz https://s3.amazonaws.com/verticatestdrive/PredictiveMaint/predictivemaint_application.tar.gz
-wget -O /tmp/tdpmfiles/predictivemaint_db.tar.gz https://s3.amazonaws.com/verticatestdrive/PredictiveMaint/predictivemaint_db.tar.gz
-## Not required for Azure wget -O /tmp/tdpmfiles/Changedbadminpasswd_resticted.sh https://s3.amazonaws.com/verticatestdrive/Changedbadminpasswd_resticted.sh
-## Not Required for Azure wget -O /tmp/tdpmfiles/auth.txt https://s3.amazonaws.com/verticatestdrive/auth.txt 
-echo "Complete Step-05 -- Download files" >> /home/dbadmin/stepfile.out
-
-## gunzip the files
-echo "Starting Step-06 -- Unziping files" >> /home/dbadmin/stepfile.out
-gunzip /tmp/tdpmfiles/predictivemaint_addfiles.tar.gz
-gunzip /tmp/tdpmfiles/predictivemaint_application.tar.gz
-gunzip /tmp/tdpmfiles/predictivemaint_db.tar.gz
-echo "Complete Step-06 -- Unziping files" >> /home/dbadmin/stepfile.out
-
-## Create the folders under dbadmin
-echo "Starting Step-07 -- Create folder in DBAdmin" >> /home/dbadmin/stepfile.out
-sudo -n -H -u dbadmin mkdir /home/dbadmin/TestDrive 
-sudo -n -H -u dbadmin mkdir /home/dbadmin/TestDrive/PredictiveMaint
-echo "Complete Step-07 -- Create folder in DBAdmin" >> /home/dbadmin/stepfile.out
-
-## Add Authfile just for testing purpose
-echo "Starting Step-08 -- SSHloginwithTestDriveID" >> /home/dbadmin/stepfile.out
-## Not required for Azure cat /tmp/tdpmfiles/auth.txt >> /home/dbadmin/.ssh/authorized_keys
-echo "complete Step-08 -- SSHloginwithTestDriveID" >> /home/dbadmin/stepfile.out
-
-## Untar the files
-echo "Starting Step-09 -- Untar the files into respective folder" >> /home/dbadmin/stepfile.out
-tar -xvf /tmp/tdpmfiles/predictivemaint_db.tar --directory=/home/dbadmin/TestDrive/PredictiveMaint/
-tar -xvf /tmp/tdpmfiles/predictivemaint_addfiles.tar --directory=/tmp/tdpmfiles/
-tar -xvf /tmp/tdpmfiles/predictivemaint_application.tar --directory=/tmp/tdpmfiles/
-mv /tmp/tdpmfiles/httpsphp/* /var/www/html/
-echo "Complete Step-09 -- Untar the files into respective folder" >> /home/dbadmin/stepfile.out
-
-## Move the system files
-echo "Starting Step-10 -- Move the misc files to right folders" >> /home/dbadmin/stepfile.out
-mv /tmp/tdpmfiles/*.ini /etc/.
-mv /tmp/tdpmfiles/httpd.conf /etc/httpd/conf/
-cat /tmp/tdpmfiles/sudoers.txt >> /etc/sudoers
-echo "Complete Step-10 -- Move the misc files to right folders" >> /home/dbadmin/stepfile.out
-
-
-## Complete the Application
-echo "Starting Step-11 -- Compile the Application" >> /home/dbadmin/stepfile.out
-sudo gcc -o /var/www/html/execfiles/fasttrack4 /var/www/html/execfiles/fasttrack4.c -lm
-echo "Complete Step-11 -- Compile the Application" >> /home/dbadmin/stepfile.out
-
-## Start the Webservices
-echo "Starting Step-12 -- Start the WebServices" >> /home/dbadmin/stepfile.out
-sudo /bin/systemctl start httpd.service
-echo "Complete Step-12 -- Start the WebServices" >> /home/dbadmin/stepfile.out
-
-## Change the TestDrive Password
-echo "Starting Step-13 -- ChangetheTestDrive Password" >> /home/dbadmin/stepfile.out
-echo "Param 1" $1 " - Param2 " $2 >> /home/dbadmin/stepfile.out
-cat /tmp/tdpmfiles/Changedbadminpasswd_resticted.sh | dos2unix  >> /tmp/tdpmfiles/Chg.txt
-mv /tmp/tdpmfiles/Chg.txt  /tmp/tdpmfiles/Changedbadminpasswd_resticted.sh
-chmod +x /tmp/tdpmfiles/Changedbadminpasswd_resticted.sh 
-/tmp/tdpmfiles/Changedbadminpasswd_resticted.sh $2
-echo "Param 1" $1 " - Param2 " $2 >> /home/dbadmin/stepfile.out
-echo "Complete Step-13 -- ChangetheTestDrive Password" >> /home/dbadmin/stepfile.out
 
 ##Install Vertica
 /opt/vertica/sbin/install_vertica --accept-eula --license CE --point-to-point --dba-user $1 --dba-user-password-disabled --hosts localhost --failure-threshold NONE
 
+
+##Steps for Test Drive
+yum install -y dos2unix
+mkdir /data/datafiles
+chown $1:verticadba /data/datafiles
+mkdir /data/controlfiles
+chown $1:verticadba /data/controlfiles
+mkdir /tmp/java
+mkdir /tmp/tdcsfiles
+
+echo 1step_DownloadStart >> /home/$1/stepfile.out
+wget -O /tmp/java/dos2unix-6.0.3-4.el7.x86_64.rpm https://s3.amazonaws.com/verticatestdrive/dos2unix-6.0.3-4.el7.x86_64.rpm
+wget -O /home/$1/clickstreamAB.tar.gz https://s3.amazonaws.com/verticatestdrive/clickstreamAB.tar.gz
+##wget -O /home/$1/ML_Function_Schema_Data.tar.gz https://s3.amazonaws.com/verticatestdrive/ML_Function_Schema_Data.tar.gz
+##wget -O /home/$1/auth.txt https://s3.amazonaws.com/verticatestdrive/auth.txt
+wget -O /tmp/java/jdk-8u121-linux-x64.rpm  https://s3.amazonaws.com/verticatestdrive/jdk-8u121-linux-x64.rpm
+wget -O /tmp/java/apache-tomcat-8.0.41.tar.gz https://s3.amazonaws.com/verticatestdrive/apache-tomcat-8.0.41.tar.gz
+wget -O /tmp/java/editprofile.txt https://s3.amazonaws.com/verticatestdrive/editprofile.txt
+## OLD one - wget -O /tmp/java/Changedbadminpasswd.sh https://s3.amazonaws.com/verticatestdrive/Changedbadminpasswd.sh
+wget -O /tmp/java/Changedbadminpasswd_resticted.sh https://raw.githubusercontent.com/pradeepts/testRepo/master/Changedbadminpasswd.sh
+wget -O /tmp/java/ACME_ABTesting_Dashboard.zip https://s3.amazonaws.com/verticatestdrive/ACME_ABTesting_Dashboard.zip
+wget -O /tmp/java/lgx120201.lic https://s3.amazonaws.com/verticatestdrive/lgx120201.lic
+wget -O /tmp/tdcsfiles/bashprofile.txt https://s3.amazonaws.com/verticatestdrive/PredictiveMaint/bashprofile.txt
+wget -O /tmp/tdcsfiles/Changetdcsuserpasswd.sh https://s3.amazonaws.com/verticatestdrive/Changetdcsuserpasswd.sh
+
+echo 2ndstep_DownloadEnd_GunzipStart >> /home/$1/stepfile.out
+gunzip /home/$1/clickstreamAB.tar.gz
+gunzip /tmp/java/apache-tomcat-8.0.41.tar.gz
+gunzip /home/$1/ML_Function_Schema_Data.tar.gz
+
+echo 3rdstep_GzipEnd_RunRPM >> /home/$1/stepfile.out      	
+rpm -Uvh /tmp/java/jdk-8u121-linux-x64.rpm
+# rpm -Uvh /tmp/java/dos2unix-6.0.3-4.el7.x86_64.rpm		  
+tar -xvf /tmp/java/apache-tomcat-8.0.41.tar --directory=/opt 
+##unzip /tmp/java/TestJava.zip -d /opt/apache-tomcat-8.0.41/webapps/ 	
+unzip /tmp/java/ACME_ABTesting_Dashboard.zip -d /opt/apache-tomcat-8.0.41/webapps/ 	
+mv /opt/apache-tomcat-8.0.41/webapps/ACME_ABTesting_Dashboard/lgx120201.lic /opt/apache-tomcat-8.0.41/webapps/ACME_ABTesting_Dashboard/lgx120201.lic.old 
+##mv /opt/apache-tomcat-8.0.41/webapps/TestJava/lgx120201.lic /opt/apache-tomcat-8.0.41/webapps/TestJava/lgx120201.lic.old
+##cp /tmp/java/lgx120201.lic /opt/apache-tomcat-8.0.41/webapps/TestJava/lgx120201.lic
+cp /tmp/java/lgx120201.lic /opt/apache-tomcat-8.0.41/webapps/ACME_ABTesting_Dashboard/lgx120201.lic
+cat /tmp/java/editprofile.txt | dos2unix  >>/etc/profile
+##Old one - - cat /tmp/java/Changedbadminpasswd.sh | dos2unix  >> /tmp/java/Chg.txt
+##Old one -- mv /tmp/java/Chg.txt  /tmp/java/Changedbadminpasswd.sh
+cat /tmp/java/Changedbadminpasswd_resticted.sh | dos2unix  >> /tmp/java/Chg.txt
+mv /tmp/java/Chg.txt  /tmp/java/Changedbadminpasswd_resticted.sh
+source /etc/profile
+
+echo 4thstep_InstallVerticaDB >> /home/$1/stepfile.out 	
+sudo -n -H -u $1 /opt/vertica/bin/admintools  -t create_db -s localhost -d testdrive -c /data/controlfiles -D /data/datafiles  
+sudo -n -H -u $1 mkdir /home/$1/TestDrive 		  
+sudo -n -H -u $1 mkdir /home/$1/TestDrive/ABTesting 		  
+sudo -n -H -u $1 mkdir /home/$1/TestDrive/MLFunctions 		 
+echo 5thstep_Misc >> /home/$1/stepfile.out 	
+cat /home/$1/auth.txt >> /home/$1/.ssh/authorized_keys 	
+tar -xvf /home/$1/clickstreamAB.tar  --directory=/home/$1/TestDrive/ABTesting/ 	
+tar -xvf /home/$1/ML_Function_Schema_Data.tar --directory=/home/$1/TestDrive/MLFunctions/	
+hostname testdrive.localdomain
+echo 'testdrive.localdomain' > /etc/hostname
+sed 's/1   localhost /1   testdrive.localdomain localhost /' < /etc/hosts > /tmp/java/hosts
+cp /etc/hosts /etc/hosts.sav
+mv /tmp/java/hosts /etc/hosts
+/opt/apache-tomcat-8.0.41/bin/startup.sh
+echo End_of_Steps >> /home/$1/stepfile.out 
+
+echo set_password >> /home/$1/stepfile.out
+chmod +x /tmp/java/Changedbadminpasswd_resticted.sh >>/home/$1/stepfile.out
+/tmp/java/Changedbadminpasswd_resticted.sh $2 >>/home/$1/stepfile.out
+##Old one --- chmod +x /tmp/java/Changedbadminpasswd.sh >>/home/$1/stepfile.out
+##Old one --- /tmp/java/Changedbadminpasswd.sh >>/home/$1/stepfile.out
+echo set_password_completed >> /home/$1/stepfile.out
+## rm -rf /tmp/java
+rm -f /home/$1/clickstreamAB.tar
+rm -f /home/$1/ML_Function_Schema_Data.tar
+rm -f /home/$1/auth.txt
+echo Clean_up_files >> /home/$1/stepfile.out 
+
 ## Restricted Environment Setup
-echo "Starting Step-14 -- Restricted Environment Setup" >> /home/dbadmin/stepfile.out
+echo "Starting Step-14 -- Restricted Environment Setup" >> /home/$1/stepfile.out
 cp /bin/bash /bin/rbash 
-useradd -s /bin/rbash tdpmuser
-mkdir /home/tdpmuser/programs
-wget -O /tmp/tdpmfiles/bashprofile.txt https://s3.amazonaws.com/verticatestdrive/PredictiveMaint/bashprofile.txt
-#wget -O /tmp/tdpmfiles/Changetdpmuserpasswd.sh https://s3.amazonaws.com/verticatestdrive/PredictiveMaint/Changetdpmuserpasswd.sh
-wget -O /tmp/tdpmfiles/Changetdpmuserpasswd.sh https://raw.githubusercontent.com/pradeepts/testRepo/master/Changedbadminpasswd.sh
-cat /tmp/tdpmfiles/bashprofile.txt | dos2unix | sudo tee /home/tdpmuser/.bash_profile
-ln -s /bin/date /home/tdpmuser/programs/
-ln -s /bin/ls /home/tdpmuser/programs/
-ln -s /usr/bin/scp /home/tdpmuser/programs/
-ln -s /usr/bin/cd /home/tdpmuser/programs/
-ln -s /usr/bin/view /home/tdpmuser/programs/
-ln -s /usr/bin/cat /home/tdpmuser/programs/	
-ln -s /usr/bin/touch /home/tdpmuser/programs/
-ln -s /usr/bin/gunzip /home/tdpmuser/programs/
-ln -s /usr/bin/tar /home/tdpmuser/programs/	
-ln -s /opt/vertica/bin/vsql /home/tdpmuser/programs/
-ln -s /usr/bin/vi /home/tdpmuser/programs/
-ln -s /usr/bin/sed /home/tdpmuser/programs/
-ln -s /usr/bin/awk /home/tdpmuser/programs/
-ln -s /usr/bin/cut /home/tdpmuser/programs/
-ln -s /usr/bin/unzip /home/tdpmuser/programs/ 
-cp -R /home/dbadmin/TestDrive /home/tdpmuser/. 
-chown -R tdpmuser /home/tdpmuser/Testdrive
-chattr +i /home/tdpmuser/.bash_profile
+useradd -s /bin/rbash tdcsuser
+mkdir /tmp/tdcsfiles
+mkdir /home/tdcsuser/programs
+##wget -O /tmp/tdcsfiles/bashprofile.txt https://s3.amazonaws.com/verticatestdrive/PredictiveMaint/bashprofile.txt
+##wget -O /tmp/tdcsfiles/Changetdcsuserpasswd.sh https://s3.amazonaws.com/verticatestdrive/Changetdcsuserpasswd.sh
+cat /tmp/tdcsfiles/bashprofile.txt | dos2unix | sudo tee /home/tdcsuser/.bash_profile
+ln -s /bin/date /home/tdcsuser/programs/
+ln -s /bin/ls /home/tdcsuser/programs/
+ln -s /usr/bin/scp /home/tdcsuser/programs/
+ln -s /usr/bin/cd /home/tdcsuser/programs/
+ln -s /usr/bin/view /home/tdcsuser/programs/
+ln -s /usr/bin/cat /home/tdcsuser/programs/	
+ln -s /usr/bin/touch /home/tdcsuser/programs/
+ln -s /usr/bin/gunzip /home/tdcsuser/programs/
+ln -s /usr/bin/tar /home/tdcsuser/programs/	
+ln -s /opt/vertica/bin/vsql /home/tdcsuser/programs/
+ln -s /usr/bin/vi /home/tdcsuser/programs/
+ln -s /usr/bin/sed /home/tdcsuser/programs/
+ln -s /usr/bin/awk /home/tdcsuser/programs/
+ln -s /usr/bin/cut /home/tdcsuser/programs/
+ln -s /usr/bin/unzip /home/tdcsuser/programs/ 
+ln -s /usr/bin/df /home/tdcsuser/programs/ 
+cp -R /home/dbadmin/TestDrive /home/tdcsuser/. 
+chown -R tdcsuser /home/tdcsuser/Testdrive
+chattr +i /home/tdcsuser/.bash_profile
 #usermod -s /sbin/nologin dbadmin
-echo "Starting Step-14 -- Restricted Environment Setup" >> /home/dbadmin/stepfile.out
+echo "Starting Step-14 -- Restricted Environment Setup" >> /home/$1/stepfile.out
 
-## Restricted Environment Setup Password Change
-echo "Starting Step-15 -- ChangetheTestDrive tdpmuser Password" >> /home/dbadmin/stepfile.out
-echo "Param 1" $1 " - Param2 " $2 >> /home/dbadmin/stepfile.out
-cat /tmp/tdpmfiles/Changetdpmuserpasswd.sh | dos2unix  >> /tmp/tdpmfiles/Chgtdpm.txt
-mv /tmp/tdpmfiles/Chgtdpm.txt  /tmp/tdpmfiles/Changetdpmuserpasswd.sh
-chmod +x /tmp/tdpmfiles/Changetdpmuserpasswd.sh 
-/tmp/tdpmfiles/Changetdpmuserpasswd.sh $2
-echo "Param 1" $1 " - Param2 " $2 >> /home/dbadmin/stepfile.out
-echo "Complete Step-15 -- ChangetheTestDrive tdpmuser Password" >> /home/dbadmin/stepfile.out		  
+##Restricted Environment Setup Password Change
+echo "Starting Step-15 -- ChangetheTestDrive tdcsuser Password" >> /home/$1/stepfile.out
+echo "Param 1" $1 " - Param2 " $2 >> /home/$1/stepfile.out
+cat /tmp/tdcsfiles/Changetdcsuserpasswd.sh | dos2unix  >> /tmp/tdcsfiles/Chgtdcs.txt
+mv /tmp/tdcsfiles/Chgtdcs.txt  /tmp/tdcsfiles/Changetdcsuserpasswd.sh
+chmod +x /tmp/tdcsfiles/Changetdcsuserpasswd.sh 
+/tmp/tdcsfiles/Changetdcsuserpasswd.sh $2
+echo "Param 1" $1 " - Param2 " $2 >> /home/$1/stepfile.out
+echo "Complete Step-15 -- ChangetheTestDrive tdcsuser Password" >> /home/$1/stepfile.out		  
 
-## Final Cleanup
-echo "Starting Step-14 -- Cleaning Up the files" >> /home/dbadmin/stepfile.out
-rm -rf /tmp/tdpmfiles 
-echo "Complete Step-14 -- Cleaning Up the files" >> /home/dbadmin/stepfile.out
+##Final Cleanup
+echo "Starting Step-16 -- Cleaning Up the files" >> /home/$1/stepfile.out
+##rm -rf /tmp/tdcsfiles 
+##rm -rf /tmp/java
+echo "Complete Step-16 -- Cleaning Up the files" >> /home/$1/stepfile.out
 
-## ********************END -- Move the Predictive Maintenance Stuff before the database creation ### 
+##********************END -- Move the Clickstream Analytics Stuff before the database creation ### 
 
+chkconfig --level 12345 verticad  on
+sed -i 's/ChallengeResponseAuthentication .*no$/ChallengeResponseAuthentication yes/' /etc/ssh/sshd_config
 
-##Setup MC User
-groupadd 500 -g 1002
-useradd uidbadmin -g 1002 -d /home/dbadmin
+#Firewall add to the vm
+#sudo yum update -y
+sudo systemctl start firewalld
+sudo firewall-cmd --zone=public --add-port=443/tcp --permanent
+sudo firewall-cmd --zone=public --add-port=80/tcp --permanent
+sudo firewall-cmd --zone=public --add-port=8080/tcp --permanent
+sudo firewall-cmd --zone=public --add-port=5433/tcp --permanent
+sudo firewall-cmd --reload
 
-
-##Create DB
-## Modified by JVA -- sudo -n -H -u $1 /opt/vertica/bin/admintools  -t create_db -s localhost -d testdrive -c /data/controlfiles -D /data/datafiles
-sudo -n -H -u $1 /opt/vertica/bin/admintools  -t create_db -s localhost -d testdrive -c /vertica/data/controlfiles -D /vertica/data/datafiles
-
-##Install MC
-echo StartMC_Install_PredictiveMaint-`date` >> /home/dbadmin/stepfile.out
-mkdir /tmp/mcfile
-wget -O /tmp/mcfile/MCInstall.tar.gz https://s3.amazonaws.com/verticatestdrive/PredictiveMaint/MCInstall.tar.gz
-gunzip /tmp/mcfile/MCInstall.tar.gz
-tar -xvf /tmp/mcfile/MCInstall.tar --directory=/tmp/mcfile
-chmod +x /tmp/mcfile/MCAttachedDB.sh
-sudo -n -H -u dbadmin /tmp/mcfile/MCAttachedDB.sh  >> /home/dbadmin/mcinstall.out
-rm -rf /tmp/mcfile
-rm -rf /tmp/software
-echo CompleteMC_Install_PredictiveMaint-`date` >> /home/dbadmin/stepfile.out
-
-
-echo 'sudo -n -H -u dbadmin /opt/vertica/bin/admintools --tool start_db --database=testdrive' >> /etc/rc.local
-echo 'sudo /bin/systemctl start httpd.service' >> /etc/rc.local
-
-shutdown -r +1 &
-
-
+service sshd restart
+systemctl stop firewalld
+systemctl disable firewalld
