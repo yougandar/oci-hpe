@@ -24,7 +24,7 @@ mv vertica-8.0.0-3.x86_64.RHEL6.rpm /root/vertica-8.0.0-3.x86_64.RHEL6.rpm
 rpm -Uvh /root/vertica-8.0.0-3.x86_64.RHEL6.rpm
 
 ##Determine disks
-raid=""
+raid="/dev/sdb"
 size=$(blockdev --getsize64 /dev/sda)
 if [ $(blockdev --getsize64 /dev/sda) -eq 137438953472 ] ; then raid="/dev/sda" ; fi
 size=$(blockdev --getsize64 /dev/sdb)
@@ -69,28 +69,28 @@ echo deadline > /sys/block/sdc/queue/scheduler
 
 ##Setup User
 groupadd verticadba
-usermod -g verticadba $1
-chown $1:verticadba /home/$1
-chmod 755 /home/$1
-chown $1:verticadba /data
+usermod -g verticadba dbadmin
+chown dbadmin:verticadba /home/dbadmin
+chmod 755 /home/dbadmin
+chown dbadmin:verticadba /data
 echo 'export TZ="America/New_York"' >> /etc/profile
 
 ##Install Vertica
-/opt/vertica/sbin/install_vertica --accept-eula --license CE --point-to-point --dba-user $1 --dba-user-password-disabled --hosts localhost --failure-threshold NONE
+/opt/vertica/sbin/install_vertica --accept-eula --license CE --point-to-point --dba-user dbadmin --dba-user-password-disabled --hosts localhost --failure-threshold NONE
 
 
 ##Steps for Test Drive
 yum install -y dos2unix
 mkdir /data/datafiles
-chown $1:verticadba /data/datafiles
+chown dbadmin:verticadba /data/datafiles
 mkdir /data/controlfiles
-chown $1:verticadba /data/controlfiles
+chown dbadmin:verticadba /data/controlfiles
 mkdir /tmp/java
 mkdir /tmp/tdcsfiles
 
-echo 1step_DownloadStart >> /home/$1/stepfile.out
+echo 1step_DownloadStart >> /home/dbadmin/stepfile.out
 wget -O /tmp/java/dos2unix-6.0.3-4.el7.x86_64.rpm https://s3.amazonaws.com/verticatestdrive/dos2unix-6.0.3-4.el7.x86_64.rpm
-wget -O /home/$1/clickstreamAB.tar.gz https://s3.amazonaws.com/verticatestdrive/clickstreamAB.tar.gz
+wget -O /home/dbadmin/clickstreamAB.tar.gz https://s3.amazonaws.com/verticatestdrive/clickstreamAB.tar.gz
 ##wget -O /home/$1/ML_Function_Schema_Data.tar.gz https://s3.amazonaws.com/verticatestdrive/ML_Function_Schema_Data.tar.gz
 ##wget -O /home/$1/auth.txt https://s3.amazonaws.com/verticatestdrive/auth.txt
 wget -O /tmp/java/jdk-8u121-linux-x64.rpm  https://s3.amazonaws.com/verticatestdrive/jdk-8u121-linux-x64.rpm
@@ -103,12 +103,12 @@ wget -O /tmp/java/lgx120201.lic https://s3.amazonaws.com/verticatestdrive/lgx120
 wget -O /tmp/tdcsfiles/bashprofile.txt https://s3.amazonaws.com/verticatestdrive/PredictiveMaint/bashprofile.txt
 wget -O /tmp/tdcsfiles/Changetdcsuserpasswd.sh https://s3.amazonaws.com/verticatestdrive/Changetdcsuserpasswd.sh
 
-echo 2ndstep_DownloadEnd_GunzipStart >> /home/$1/stepfile.out
-gunzip /home/$1/clickstreamAB.tar.gz
+echo 2ndstep_DownloadEnd_GunzipStart >> /home/dbadmin/stepfile.out
+gunzip /home/dbadmin/clickstreamAB.tar.gz
 gunzip /tmp/java/apache-tomcat-8.0.41.tar.gz
-gunzip /home/$1/ML_Function_Schema_Data.tar.gz
+gunzip /home/dbadmin/ML_Function_Schema_Data.tar.gz
 
-echo 3rdstep_GzipEnd_RunRPM >> /home/$1/stepfile.out      	
+echo 3rdstep_GzipEnd_RunRPM >> /home/dbadmin/stepfile.out      	
 rpm -Uvh /tmp/java/jdk-8u121-linux-x64.rpm
 # rpm -Uvh /tmp/java/dos2unix-6.0.3-4.el7.x86_64.rpm		  
 tar -xvf /tmp/java/apache-tomcat-8.0.41.tar --directory=/opt 
@@ -125,37 +125,37 @@ cat /tmp/java/Changedbadminpasswd_resticted.sh | dos2unix  >> /tmp/java/Chg.txt
 mv /tmp/java/Chg.txt  /tmp/java/Changedbadminpasswd_resticted.sh
 source /etc/profile
 
-echo 4thstep_InstallVerticaDB >> /home/$1/stepfile.out 	
-sudo -n -H -u $1 /opt/vertica/bin/admintools  -t create_db -s localhost -d testdrive -c /data/controlfiles -D /data/datafiles  
-sudo -n -H -u $1 mkdir /home/$1/TestDrive 		  
-sudo -n -H -u $1 mkdir /home/$1/TestDrive/ABTesting 		  
-sudo -n -H -u $1 mkdir /home/$1/TestDrive/MLFunctions 		 
-echo 5thstep_Misc >> /home/$1/stepfile.out 	
-cat /home/$1/auth.txt >> /home/$1/.ssh/authorized_keys 	
-tar -xvf /home/$1/clickstreamAB.tar  --directory=/home/$1/TestDrive/ABTesting/ 	
-tar -xvf /home/$1/ML_Function_Schema_Data.tar --directory=/home/$1/TestDrive/MLFunctions/	
+echo 4thstep_InstallVerticaDB >> /home/dbadmin/stepfile.out 	
+sudo -n -H -u dbadmin /opt/vertica/bin/admintools  -t create_db -s localhost -d testdrive -c /data/controlfiles -D /data/datafiles  
+sudo -n -H -u dbadmin mkdir /home/dbadmin/TestDrive 		  
+sudo -n -H -u dbadmin mkdir /home/dbadmin/TestDrive/ABTesting 		  
+sudo -n -H -u dbadmin mkdir /home/dbadmin/TestDrive/MLFunctions 		 
+echo 5thstep_Misc >> /home/dbadmin/stepfile.out 	
+cat /home/dbadmin/auth.txt >> /home/dbadmin/.ssh/authorized_keys 	
+tar -xvf /home/dbadmin/clickstreamAB.tar  --directory=/home/dbadmin/TestDrive/ABTesting/ 	
+tar -xvf /home/dbadmin/ML_Function_Schema_Data.tar --directory=/home/dbadmin/TestDrive/MLFunctions/	
 hostname testdrive.localdomain
 echo 'testdrive.localdomain' > /etc/hostname
 sed 's/1   localhost /1   testdrive.localdomain localhost /' < /etc/hosts > /tmp/java/hosts
 cp /etc/hosts /etc/hosts.sav
 mv /tmp/java/hosts /etc/hosts
 /opt/apache-tomcat-8.0.41/bin/startup.sh
-echo End_of_Steps >> /home/$1/stepfile.out 
+echo End_of_Steps >> /home/dbadmin/stepfile.out 
 
-echo set_password >> /home/$1/stepfile.out
-chmod +x /tmp/java/Changedbadminpasswd_resticted.sh >>/home/$1/stepfile.out
-/tmp/java/Changedbadminpasswd_resticted.sh $2 >>/home/$1/stepfile.out
+echo set_password >> /home/dbadmin/stepfile.out
+chmod +x /tmp/java/Changedbadminpasswd_resticted.sh >>/home/dbadmin/stepfile.out
+/tmp/java/Changedbadminpasswd_resticted.sh tdcsuser >>/home/dbadmin/stepfile.out
 ##Old one --- chmod +x /tmp/java/Changedbadminpasswd.sh >>/home/$1/stepfile.out
 ##Old one --- /tmp/java/Changedbadminpasswd.sh >>/home/$1/stepfile.out
-echo set_password_completed >> /home/$1/stepfile.out
+echo set_password_completed >> /home/dbadmin/stepfile.out
 ## rm -rf /tmp/java
-rm -f /home/$1/clickstreamAB.tar
-rm -f /home/$1/ML_Function_Schema_Data.tar
-rm -f /home/$1/auth.txt
-echo Clean_up_files >> /home/$1/stepfile.out 
+rm -f /home/dbadmin/clickstreamAB.tar
+rm -f /home/dbadmin/ML_Function_Schema_Data.tar
+rm -f /home/dbadmin/auth.txt
+echo Clean_up_files >> /home/dbadmin/stepfile.out 
 
 ## Restricted Environment Setup
-echo "Starting Step-14 -- Restricted Environment Setup" >> /home/$1/stepfile.out
+echo "Starting Step-14 -- Restricted Environment Setup" >> /home/dbadmin/stepfile.out
 cp /bin/bash /bin/rbash 
 useradd -s /bin/rbash tdcsuser
 mkdir /tmp/tdcsfiles
@@ -183,23 +183,23 @@ cp -R /home/dbadmin/TestDrive /home/tdcsuser/.
 chown -R tdcsuser /home/tdcsuser/Testdrive
 chattr +i /home/tdcsuser/.bash_profile
 #usermod -s /sbin/nologin dbadmin
-echo "Starting Step-14 -- Restricted Environment Setup" >> /home/$1/stepfile.out
+echo "Starting Step-14 -- Restricted Environment Setup" >> /home/dbadmin/stepfile.out
 
 ##Restricted Environment Setup Password Change
-echo "Starting Step-15 -- ChangetheTestDrive tdcsuser Password" >> /home/$1/stepfile.out
-echo "Param 1" $1 " - Param2 " $2 >> /home/$1/stepfile.out
+echo "Starting Step-15 -- ChangetheTestDrive tdcsuser Password" >> /home/dbadmin/stepfile.out
+echo "Param 1" dbadmin " - Param2 " tdcsuser >> /home/dbadmin/stepfile.out
 cat /tmp/tdcsfiles/Changetdcsuserpasswd.sh | dos2unix  >> /tmp/tdcsfiles/Chgtdcs.txt
 mv /tmp/tdcsfiles/Chgtdcs.txt  /tmp/tdcsfiles/Changetdcsuserpasswd.sh
 chmod +x /tmp/tdcsfiles/Changetdcsuserpasswd.sh 
-/tmp/tdcsfiles/Changetdcsuserpasswd.sh $2
-echo "Param 1" $1 " - Param2 " $2 >> /home/$1/stepfile.out
-echo "Complete Step-15 -- ChangetheTestDrive tdcsuser Password" >> /home/$1/stepfile.out		  
+/tmp/tdcsfiles/Changetdcsuserpasswd.sh tdcsuser
+echo "Param 1" dbadmin " - Param2 " tdcsuser >> /home/dbadmin/stepfile.out
+echo "Complete Step-15 -- ChangetheTestDrive tdcsuser Password" >> /home/dbadmin/stepfile.out		  
 
 ##Final Cleanup
-echo "Starting Step-16 -- Cleaning Up the files" >> /home/$1/stepfile.out
+echo "Starting Step-16 -- Cleaning Up the files" >> /home/dbadmin/stepfile.out
 ##rm -rf /tmp/tdcsfiles 
 ##rm -rf /tmp/java
-echo "Complete Step-16 -- Cleaning Up the files" >> /home/$1/stepfile.out
+echo "Complete Step-16 -- Cleaning Up the files" >> /home/dbadmin/stepfile.out
 
 ##********************END -- Move the Clickstream Analytics Stuff before the database creation ### 
 
