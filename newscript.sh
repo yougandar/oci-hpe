@@ -3,7 +3,7 @@
 sudo useradd dbadmin
 sudo useradd tdcsuser
 sudo echo -e "dbadmin ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers
-sudo echo -e "tdpmuser ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers
+sudo echo -e "tdcsuser ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers
 
 
 ##Install needed Packages
@@ -208,12 +208,9 @@ sed -i 's/ChallengeResponseAuthentication .*no$/ChallengeResponseAuthentication 
 
 #Firewall add to the vm
 #sudo yum update -y
-sudo systemctl start firewalld
 sudo firewall-cmd --zone=public --add-port=443/tcp --permanent
-sudo firewall-cmd --zone=public --add-port=80/tcp --permanent
 sudo firewall-cmd --zone=public --add-port=8080/tcp --permanent
 sudo firewall-cmd --zone=public --add-port=5433/tcp --permanent
-sudo firewall-cmd --reload
 
 service sshd restart
 systemctl stop firewalld
