@@ -139,7 +139,8 @@ echo 'testdrive.localdomain' > /etc/hostname
 sed 's/1   localhost /1   testdrive.localdomain localhost /' < /etc/hosts > /tmp/java/hosts
 cp /etc/hosts /etc/hosts.sav
 mv /tmp/java/hosts /etc/hosts
-/opt/apache-tomcat-8.0.41/bin/startup.sh
+sudo chmod 777 /opt/apache-tomcat-8.0.41/bin/startup.sh
+sudo /opt/apache-tomcat-8.0.41/bin/startup.sh
 echo End_of_Steps >> /home/dbadmin/stepfile.out 
 
 echo set_password >> /home/dbadmin/stepfile.out
