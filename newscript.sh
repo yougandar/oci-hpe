@@ -101,7 +101,7 @@ wget -O /tmp/java/Changedbadminpasswd_resticted.sh https://raw.githubusercontent
 wget -O /tmp/java/ACME_ABTesting_Dashboard.zip https://s3.amazonaws.com/verticatestdrive/ACME_ABTesting_Dashboard.zip
 wget -O /tmp/java/lgx120201.lic https://s3.amazonaws.com/verticatestdrive/lgx120201.lic
 wget -O /tmp/tdcsfiles/bashprofile.txt https://s3.amazonaws.com/verticatestdrive/PredictiveMaint/bashprofile.txt
-wget -O /tmp/tdcsfiles/Changetdcsuserpasswd.sh https://s3.amazonaws.com/verticatestdrive/Changetdcsuserpasswd.sh
+wget -O /tmp/tdcsfiles/Changetdcsuserpasswd.sh https://raw.githubusercontent.com/pradeepts/testRepo/master/Changetdcsuserpasswd.sh
 
 echo 2ndstep_DownloadEnd_GunzipStart >> /home/dbadmin/stepfile.out
 gunzip /home/dbadmin/clickstreamAB.tar.gz
@@ -215,6 +215,3 @@ sudo firewall-cmd --zone=public --add-port=5433/tcp --permanent
 service sshd restart
 systemctl stop firewalld
 systemctl disable firewalld
-
-cd /opt/apache-tomcat-8.0.41/bin
-sudo ./startup.sh
