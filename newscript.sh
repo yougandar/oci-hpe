@@ -166,6 +166,7 @@ cat /tmp/tdcsfiles/bashprofile.txt | dos2unix | sudo tee /home/tdcsuser/.bash_pr
 ln -s /bin/date /home/tdcsuser/programs/
 ln -s /bin/ls /home/tdcsuser/programs/
 ln -s /usr/bin/scp /home/tdcsuser/programs/
+ln -s /opt/apache-tomcat-8.0.41/bin/startup.sh /home/tdcsuser/programs/
 ln -s /usr/bin/cd /home/tdcsuser/programs/
 ln -s /usr/bin/view /home/tdcsuser/programs/
 ln -s /usr/bin/cat /home/tdcsuser/programs/	
