@@ -216,5 +216,5 @@ service sshd restart
 systemctl stop firewalld
 systemctl disable firewalld
 
-sudo cd /opt/apache-tomcat-8.0.41/bin
+cd /opt/apache-tomcat-8.0.41/bin
 sudo ./startup.sh
