@@ -97,11 +97,11 @@ wget -O /tmp/java/jdk-8u121-linux-x64.rpm  https://s3.amazonaws.com/verticatestd
 wget -O /tmp/java/apache-tomcat-8.0.41.tar.gz https://s3.amazonaws.com/verticatestdrive/apache-tomcat-8.0.41.tar.gz
 wget -O /tmp/java/editprofile.txt https://s3.amazonaws.com/verticatestdrive/editprofile.txt
 ## OLD one - wget -O /tmp/java/Changedbadminpasswd.sh https://s3.amazonaws.com/verticatestdrive/Changedbadminpasswd.sh
-wget -O /tmp/java/Changedbadminpasswd_resticted.sh https://raw.githubusercontent.com/pradeepts/testRepo/master/Changedbadminpasswd.sh
+wget -O /tmp/java/Changedbadminpasswd_resticted.sh https://aztdrepo.blob.core.windows.net/sysgaintdartifacts/Changedbadminpasswd.sh
 wget -O /tmp/java/ACME_ABTesting_Dashboard.zip https://s3.amazonaws.com/verticatestdrive/ACME_ABTesting_Dashboard.zip
 wget -O /tmp/java/lgx120201.lic https://s3.amazonaws.com/verticatestdrive/lgx120201.lic
 wget -O /tmp/tdcsfiles/bashprofile.txt https://s3.amazonaws.com/verticatestdrive/PredictiveMaint/bashprofile.txt
-wget -O /tmp/tdcsfiles/Changetdcsuserpasswd.sh https://raw.githubusercontent.com/pradeepts/testRepo/master/Changetdcsuserpasswd.sh
+wget -O /tmp/tdcsfiles/Changetdcsuserpasswd.sh https://aztdrepo.blob.core.windows.net/sysgaintdartifacts/Changetdcsuserpasswd.sh
 
 echo 2ndstep_DownloadEnd_GunzipStart >> /home/dbadmin/stepfile.out
 gunzip /home/dbadmin/clickstreamAB.tar.gz
